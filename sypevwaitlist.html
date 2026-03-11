@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdmitQuest — Your Journey to Admission Starts Here</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --gold: #c9a96e;
+      --gold-light: #e8c98a;
+      --gold-dim: rgba(201, 169, 110, 0.15);
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: rgba(201, 169, 110, 0.18);
+      --text: #f0ede6;
+      --muted: #7a7570;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .glow {
+      position: fixed;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(201, 169, 110, 0.07) 0%, transparent 70%);
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+      animation: pulseGlow 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from {
+        opacity: 0.5;
+        transform: translateX(-50%) scale(1)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.15)
+      }
+    }
+
+    .grid-lines {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(201, 169, 110, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201, 169, 110, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 660px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: var(--gold-dim);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 100px;
+      margin-bottom: 40px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: blink 1.6s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.2
+      }
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 3.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      text-align: center;
+      margin-bottom: 24px;
+      animation: fadeDown 0.7s ease 0.1s both;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--gold);
+      position: relative;
+    }
+
+    h1 em::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .sub {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--muted);
+      text-align: center;
+      max-width: 460px;
+      margin-bottom: 48px;
+      animation: fadeDown 0.7s ease 0.2s both;
+    }
+
+    .sub strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* Journey */
+    .journey {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      row-gap: 16px;
+      animation: fadeDown 0.7s ease 0.25s both;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stage-bubble {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: transform 0.2s;
+    }
+
+    .stage:hover .stage-bubble {
+      transform: scale(1.1);
+    }
+
+    .stage.done .stage-bubble {
+      border-color: var(--gold);
+      background: var(--gold-dim);
+    }
+
+    .stage.active .stage-bubble {
+      border-color: var(--gold);
+      background: var(--gold);
+      box-shadow: 0 0 0 4px var(--gold-dim);
+    }
+
+    .stage-label {
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stage.active .stage-label {
+      color: var(--gold-light);
+    }
+
+    .stage.done .stage-label {
+      color: var(--gold);
+    }
+
+    .stage-line {
+      width: 36px;
+      height: 1px;
+      flex-shrink: 0;
+      margin-bottom: 22px;
+    }
+
+    .stage-line.lit {
+      background: var(--gold);
+      opacity: 0.5;
+    }
+
+    .stage-line.dim {
+      background: var(--border);
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      width: 100%;
+      margin-bottom: 28px;
+      animation: fadeDown 0.7s ease 0.3s both;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 22px 16px;
+      text-align: center;
+      position: relative;
+    }
+
+    .stat+.stat::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      height: 60%;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--gold);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* Card */
+    .card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp 0.8s ease 0.4s both;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="email"],
+    input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 14px 18px;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    input:focus {
+      border-color: rgba(201, 169, 110, 0.5);
+      background: rgba(201, 169, 110, 0.04);
+    }
+
+    input.error-field {
+      border-color: rgba(220, 60, 60, 0.6);
+    }
+
+    select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      padding: 14px 18px;
+      border-radius: 10px;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    select:focus {
+      border-color: rgba(201, 169, 110, 0.5);
+      color: var(--text);
+    }
+
+    select option {
+      background: #1a1a1a;
+      color: var(--text);
+    }
+
+    .btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), #a07840);
+      color: #0a0a0a;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 15px 28px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
+    }
+
+    .btn:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .terms {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 16px;
+      line-height: 1.6;
+    }
+
+    .submit-error {
+      font-size: 0.75rem;
+      color: #e06060;
+      text-align: center;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* Success */
+    .success {
+      display: none;
+      text-align: center;
+      padding: 12px 0 4px;
+    }
+
+    .success-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin: 0 auto 18px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0)
+      }
+
+      to {
+        transform: scale(1)
+      }
+    }
+
+    .success h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .success p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .founder-badge {
+      display: inline-block;
+      margin-top: 20px;
+      background: var(--gold-dim);
+      border: 1px dashed var(--gold);
+      color: var(--gold-light);
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 10px 24px;
+      border-radius: 10px;
+    }
+
+    /* Perks */
+    .perks {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 28px;
+      animation: fadeUp 0.8s ease 0.5s both;
+    }
+
+    .perk {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: border-color 0.2s;
+    }
+
+    .perk:hover {
+      border-color: rgba(201, 169, 110, 0.35);
+    }
+
+    .perk-icon {
+      font-size: 1.1rem;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .perk-title {
+      font-size: 0.83rem;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .perk-desc {
+      font-size: 0.74rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--gold-light);
+    }
+
+    @keyframes fadeDown {
+      from {
+        opacity: 0;
+        transform: translateY(-16px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      20% {
+        transform: translateX(-6px)
+      }
+
+      40% {
+        transform: translateX(6px)
+      }
+
+      60% {
+        transform: translateX(-4px)
+      }
+
+      80% {
+        transform: translateX(4px)
+      }
+    }
+
+    @media(max-width:520px) {
+      .field-row {
+        flex-direction: column
+      }
+
+      .perks {
+        grid-template-columns: 1fr
+      }
+
+      .card {
+        padding: 24px
+      }
+
+      .journey .stage-line {
+        width: 18px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="glow"></div>
+  <div class="grid-lines"></div>
+  <div class="wrapper">
+
+    <div class="badge"><span class="badge-dot"></span>Early Access · Limited Spots</div>
+
+    <h1>Your path to admission,<br /><em>stage by stage.</em></h1>
+
+    <p class="sub">AdmitQuest turns the overwhelming admissions journey into a <strong>clear, gamified roadmap</strong>
+      — from your first study plan to your acceptance letter. Every gap filled. Every stage unlocked.</p>
+
+    <div class="journey">
+      <div class="stage done">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Study</div>
+      </div>
+      <div class="stage-line lit"></div>
+      <div class="stage done">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Tests</div>
+      </div>
+      <div class="stage-line lit"></div>
+      <div class="stage active">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Apply</div>
+      </div>
+      <div class="stage-line dim"></div>
+      <div class="stage">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Shortlist</div>
+      </div>
+      <div class="stage-line dim"></div>
+      <div class="stage">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Essays</div>
+      </div>
+      <div class="stage-line dim"></div>
+      <div class="stage">
+        <div class="stage-bubble"> </div>
+        <div class="stage-label">Interview</div>
+      </div>
+      <div class="stage-line dim"></div>
+      <div class="stage">
+        <div class="stage-bubble"></div>
+        <div class="stage-label">Admit</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span class="stat-value" id="counter">–</span><span class="stat-label">On Waitlist</span></div>
+      <div class="stat"><span class="stat-value" id="spotsLeft">–</span><span class="stat-label">Spots Left</span></div>
+      <div class="stat"><span class="stat-value">50%</span><span class="stat-label">Off Forever</span></div>
+    </div>
+
+    <div class="card" id="formCard">
+      <div id="formView">
+        <label class="form-label">Claim your founding member spot</label>
+        <div class="fields">
+          <div class="field-row">
+            <input type="text" id="nameInput" placeholder="Your name" autocomplete="name" />
+            <input type="email" id="emailInput" placeholder="your@email.com" autocomplete="email" />
+          </div>
+          <select id="stageSelect">
+            <option value="">Where are you in the journey? (optional)</option>
+            <option value="studying"> Still studying / preparing</option>
+            <option value="tests"> Taking entrance tests</option>
+            <option value="shortlisting"> Shortlisting universities</option>
+            <option value="essays"> Writing essays / SOP</option>
+            <option value="applications"> Submitting applications</option>
+            <option value="interviews"> Interview stage</option>
+          </select>
+          <button class="btn" id="submitBtn" onclick="handleSubmit()">Reserve My Spot — 50% Off Forever →</button>
+        </div>
+        <div class="submit-error" id="submitError"></div>
+        <p class="terms">No spam, ever. Your discount is locked the moment you sign up.</p>
+      </div>
+      <div class="success" id="successView">
+        <div class="success-icon">✦</div>
+        <h3>You're on the quest.</h3>
+        <p>We'll reach out as soon as access opens.<br />Your 50% lifetime discount is already reserved.</p>
+        <div class="founder-badge">Founding Member #<span id="positionNum">—</span></div>
+      </div>
+    </div>
+
+    <div class="perks">
+      <div class="perk"><span class="perk-icon">◆</span>
+        <div>
+          <div class="perk-title">50% Off, Forever</div>
+          <div class="perk-desc">Not a trial. Not a promo. Your rate is locked in for the life of your subscription.
+          </div>
+        </div>
+      </div>
+      <div class="perk"><span class="perk-icon">⚠</span>
+        <div>
+          <div class="perk-title">Gap Detector</div>
+          <div class="perk-desc">Our AI scans your profile and flags exactly what's missing between you and your dream
+            school.</div>
+        </div>
+      </div>
+      <div class="perk"><span class="perk-icon">◈</span>
+        <div>
+          <div class="perk-title">Gamified Roadmap</div>
+          <div class="perk-desc">Earn XP, unlock stages, track streaks. Admissions is overwhelming — we make it a game
+            you can win.</div>
+        </div>
+      </div>
+      <div class="perk"><span class="perk-icon">◉</span>
+        <div>
+          <div class="perk-title">Founder Status</div>
+          <div class="perk-desc">A permanent badge on your account. Shape the product with direct feedback from day one.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>&copy; 2026 AdmitQuest · All rights reserved · <a href="#">Privacy</a> · <a href="#">Terms</a> · <a
+      href="admin.html">Admin</a></footer>
+
+  <script>
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_ANON = 'YOUR_ANON_KEY';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+    const TOTAL_SPOTS = 300;
+
+    async function loadCount() {
+      try {
+        const { count } = await db.from('waitlist').select('*', { count: 'exact', head: true });
+        const n = count || 0;
+        animateCounter(document.getElementById('counter'), 0, n, 1400);
+        document.getElementById('spotsLeft').textContent = Math.max(0, TOTAL_SPOTS - n);
+      } catch (e) {
+        document.getElementById('counter').textContent = '–';
+        document.getElementById('spotsLeft').textContent = '–';
+      }
+    }
+    loadCount();
+
+    function animateCounter(el, from, to, duration) {
+      let start = null;
+      function step(ts) {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / duration, 1);
+        el.textContent = Math.floor(p * (to - from) + from);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    async function handleSubmit() {
+      const name = document.getElementById('nameInput').value.trim();
+      const email = document.getElementById('emailInput').value.trim();
+      const stage = document.getElementById('stageSelect').value;
+      const btn = document.getElementById('submitBtn');
+      let valid = true;
+      document.getElementById('nameInput').classList.remove('error-field');
+      document.getElementById('emailInput').classList.remove('error-field');
+      if (!name) { document.getElementById('nameInput').classList.add('error-field'); valid = false; }
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('emailInput').classList.add('error-field'); valid = false; }
+      if (!valid) { shake(btn); return; }
+      btn.disabled = true; btn.textContent = 'Securing your spot…';
+      document.getElementById('submitError').style.display = 'none';
+      try {
+        const { count } = await db.from('waitlist').select('*', { count: 'exact', head: true });
+        const position = (count || 0) + 1;
+        const { error } = await db.from('waitlist').insert([{ name, email, stage: stage || null, position, joined_at: new Date().toISOString() }]);
+        if (error) {
+          showError(error.code === '23505' ? 'This email is already on the waitlist!' : 'Something went wrong. Please try again.');
+          btn.disabled = false; btn.textContent = 'Reserve My Spot — 50% Off Forever →'; return;
+        }
+        document.getElementById('positionNum').textContent = position;
+        document.getElementById('formView').style.display = 'none';
+        document.getElementById('successView').style.display = 'block';
+      } catch (e) {
+        showError('Network error. Please try again.');
+        btn.disabled = false; btn.textContent = 'Reserve My Spot — 50% Off Forever →';
+      }
+    }
+
+    function showError(msg) { const el = document.getElementById('submitError'); el.textContent = msg; el.style.display = 'block'; }
+    function shake(el) { el.style.animation = 'none'; el.offsetHeight; el.style.animation = 'shake 0.4s ease'; setTimeout(() => el.style.animation = '', 400); }
+  </script>
+</body>
+
+</html>
